@@ -4,7 +4,7 @@ import {
   ForbiddenException,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { Between, Repository } from "typeorm";
 import { Occurrence, OccurrenceStatus } from "./entities/occurrence.entity";
 import { CreateOccurrenceDto } from "./dtos/create-occurrence.dto";
 
@@ -64,5 +64,25 @@ export class OccurrencesService {
     }
 
     return occurrence;
+  }
+
+  async findByFilters(
+    userId: number,
+    filters: {
+      status: string;
+      start: string;
+      end: string;
+    }
+  ) {
+    const query = await this.occurrenceRepository.findBy({
+      created_by: { id: userId },
+      status:
+        filters.status !== "all"
+          ? (filters.status as OccurrenceStatus)
+          : undefined,
+      created_at: Between(new Date(filters.start), new Date(filters.end)),
+    });
+
+    return query;
   }
 }

@@ -1,20 +1,20 @@
 import { Controller, Post, Query, UseGuards, Request } from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
-import { InjectQueue } from "@nestjs/bull";
-import { Queue } from "bull";
+
 import {
   ApiTags,
   ApiOperation,
   ApiBearerAuth,
   ApiQuery,
 } from "@nestjs/swagger";
+import { ReportsService } from "./reports.service";
 
 @ApiTags("Reports")
 @ApiBearerAuth()
 @UseGuards(AuthGuard("jwt"))
 @Controller("reports")
 export class ReportsController {
-  constructor(@InjectQueue("pdf-reports") private pdfQueue: Queue) {}
+  constructor(private readonly reportsService: ReportsService) {}
 
   @ApiOperation({ summary: "Generate PDF report" })
   @ApiQuery({
@@ -37,14 +37,6 @@ export class ReportsController {
       end: end || new Date().toISOString(),
     };
 
-    const job = await this.pdfQueue.add("generate-report", {
-      userId: req.user.id,
-      filters,
-    });
-
-    return {
-      message: "Report generation queued successfully",
-      jobId: job.id,
-    };
+    return this.reportsService.requestPdfReport(req.user.id, filters);
   }
 }
