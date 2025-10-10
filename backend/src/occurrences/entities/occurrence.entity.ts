@@ -22,7 +22,10 @@ export class Occurrence {
   @CreateDateColumn()
   created_at: Date;
 
-  @ManyToOne(() => User, (user) => user.occurrences, { nullable: false })
+  @ManyToOne(() => User, (user) => user.occurrences, {
+    nullable: false,
+    eager: true,
+  })
   @JoinColumn({ name: "created_by" })
   created_by: User;
 

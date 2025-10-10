@@ -1,21 +1,21 @@
-import {
-  Injectable,
-  NotFoundException,
-  ForbiddenException,
-} from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Between, Repository } from "typeorm";
 import { Occurrence, OccurrenceStatus } from "./entities/occurrence.entity";
 import { CreateOccurrenceDto } from "./dtos/create-occurrence.dto";
+import { UsersService } from "../users/users.service";
 
 @Injectable()
 export class OccurrencesService {
   constructor(
     @InjectRepository(Occurrence)
-    private occurrenceRepository: Repository<Occurrence>
+    private occurrenceRepository: Repository<Occurrence>,
+    private usersService: UsersService
   ) {}
 
-  async create(createOccurrenceDto: CreateOccurrenceDto, userId: number) {
+  async create(createOccurrenceDto: CreateOccurrenceDto, user: string) {
+    const userId = (await this.usersService.findByEmail(user)).id;
+
     const occurrence = this.occurrenceRepository.create({
       ...createOccurrenceDto,
       created_by: { id: userId },

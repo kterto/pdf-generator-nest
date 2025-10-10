@@ -10,10 +10,12 @@ export class AuthController {
 
   @ApiOperation({ summary: "User login" })
   @ApiResponse({ status: 200, description: "Login successful" })
-  @UseGuards(AuthGuard("local"))
   @Post("signin")
   async signin(@Request() req) {
-    return this.authService.login(req.user);
+    return this.authService.login({
+      email: req.body.email.toString(),
+      password: req.body.password,
+    });
   }
 
   @ApiOperation({ summary: "User registration" })

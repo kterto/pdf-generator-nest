@@ -11,9 +11,16 @@ import {
 } from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
 
-import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiResponse,
+} from "@nestjs/swagger";
 import { OccurrencesService } from "./occurreces.service";
 import { CreateOccurrenceDto } from "./dtos/create-occurrence.dto";
+import { Occurrence } from "./entities/occurrence.entity";
+import { JwtAuthGuard } from "../auth/jwt-auth-guard";
 
 @ApiTags("Occurrences")
 @ApiBearerAuth()
@@ -23,7 +30,14 @@ export class OccurrencesController {
   constructor(private readonly occurrencesService: OccurrencesService) {}
 
   @ApiOperation({ summary: "Create occurrence" })
+  @ApiBearerAuth("JWT")
+  @ApiResponse({
+    status: 200,
+    description: "The occurrence has been created.",
+    type: Occurrence,
+  })
   @Post()
+  @UseGuards(JwtAuthGuard)
   create(@Body() createOccurrenceDto: CreateOccurrenceDto, @Request() req) {
     return this.occurrencesService.create(createOccurrenceDto, req.user.id);
   }

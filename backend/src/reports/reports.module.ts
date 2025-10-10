@@ -3,6 +3,8 @@ import { Module } from "@nestjs/common";
 import { ReportsProcessor } from "./reports.processor";
 import { OccurrencesModule } from "../occurrences/occurrences.module";
 import { PdfGeneratorModule } from "../pdf-generator/pdf-generator.module";
+import { ReportsController } from "./reports.controller";
+import { ReportsService } from "./reports.service";
 
 @Module({
   imports: [
@@ -12,7 +14,8 @@ import { PdfGeneratorModule } from "../pdf-generator/pdf-generator.module";
     OccurrencesModule,
     PdfGeneratorModule,
   ],
-  providers: [ReportsProcessor],
+  controllers: [ReportsController],
+  providers: [ReportsProcessor, ReportsService],
   exports: [],
 })
 export class ReportsModule {}

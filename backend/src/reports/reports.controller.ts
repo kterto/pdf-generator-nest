@@ -1,4 +1,11 @@
-import { Controller, Post, Query, UseGuards, Request } from "@nestjs/common";
+import {
+  Controller,
+  Post,
+  Query,
+  UseGuards,
+  Request,
+  Body,
+} from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
 
 import {
@@ -26,9 +33,9 @@ export class ReportsController {
   @ApiQuery({ name: "end", required: false, type: "string" })
   @Post("create_report")
   async createReport(
-    @Query("status") status: string,
-    @Query("start") start: string,
-    @Query("end") end: string,
+    @Body("status") status: string,
+    @Body("start") start: string,
+    @Body("end") end: string,
     @Request() req
   ) {
     const filters = {

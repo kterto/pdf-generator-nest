@@ -14,6 +14,7 @@ export class ReportsProcessor {
 
   @Process("generate-report")
   async generateReport(job: Job) {
+    console.log("Processing job:", job.id, "with data:", job.data);
     const { userId, filters } = job.data;
 
     try {
@@ -22,6 +23,9 @@ export class ReportsProcessor {
         userId,
         filters
       );
+
+      console.log(`Found ${occurrences.length} occurrences for user ${userId}`);
+      console.log("occurrences:", occurrences);
 
       // Prepare data for PDF generation
       const reportData = {
@@ -48,6 +52,7 @@ export class ReportsProcessor {
 
       // In a real app, you'd save this to a file storage service
       // For now, we'll just return success
+      console.log("Report generated successfully for job:", job.id);
       return { success: true, pdfSize: pdfBuffer.length };
     } catch (error) {
       console.error("Error generating report:", error);

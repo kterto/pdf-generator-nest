@@ -24,11 +24,17 @@ export class AuthService {
     return null;
   }
 
-  async login(user: any) {
-    const payload = { email: user.email, sub: user.id };
+  async login({
+    email,
+    password,
+  }: {
+    email: string;
+    password: string;
+  }): Promise<{ access_token: string; user: Partial<User> }> {
+    const payload = { email: email, password: password };
     return {
       access_token: this.jwtService.sign(payload),
-      user: user,
+      user: await this.usersService.findByEmail(email),
     };
   }
 
@@ -38,6 +44,6 @@ export class AuthService {
       ...createUserDto,
       password: hashedPassword,
     });
-    return this.login(user);
+    return this.login({ email: user.email, password: createUserDto.password });
   }
 }
