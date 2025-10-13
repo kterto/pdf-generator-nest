@@ -25,7 +25,6 @@ export class ReportsProcessor {
       );
 
       console.log(`Found ${occurrences.length} occurrences for user ${userId}`);
-      console.log("occurrences:", occurrences);
 
       // Prepare data for PDF generation
       const reportData = {
@@ -45,15 +44,17 @@ export class ReportsProcessor {
         },
       };
 
+      console.log(`generating report for data`, reportData);
+
       // Generate PDF
-      const pdfBuffer = await this.pdfGeneratorService.generateReportPdf(
+      const pdfPath = await this.pdfGeneratorService.generateReportPdf(
         reportData
       );
 
       // In a real app, you'd save this to a file storage service
       // For now, we'll just return success
       console.log("Report generated successfully for job:", job.id);
-      return { success: true, pdfSize: pdfBuffer.length };
+      return { success: true, filePaeth: pdfPath };
     } catch (error) {
       console.error("Error generating report:", error);
       throw error;

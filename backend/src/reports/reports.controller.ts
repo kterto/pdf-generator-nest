@@ -43,7 +43,7 @@ export class ReportsController {
       start,
       end: end || new Date().toISOString(),
     };
-
-    return this.reportsService.requestPdfReport(req.user.id, filters);
+    console.log("[req][user]: ", req.user);
+    return this.reportsService.requestPdfReport(req.user.email, filters);
   }
 }

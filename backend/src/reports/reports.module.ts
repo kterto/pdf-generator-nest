@@ -5,6 +5,7 @@ import { OccurrencesModule } from "../occurrences/occurrences.module";
 import { PdfGeneratorModule } from "../pdf-generator/pdf-generator.module";
 import { ReportsController } from "./reports.controller";
 import { ReportsService } from "./reports.service";
+import { UsersModule } from "../users/users.module";
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { ReportsService } from "./reports.service";
     }),
     OccurrencesModule,
     PdfGeneratorModule,
+    UsersModule,
   ],
   controllers: [ReportsController],
   providers: [ReportsProcessor, ReportsService],
