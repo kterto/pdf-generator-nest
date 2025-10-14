@@ -4,14 +4,15 @@ import { LogOut, FileText, PlusCircle } from "lucide-react";
 
 import { CreateOccurrenceTab } from "../components/CreateOccurrenceTab";
 import { PDFReportTab } from "../components/PDFReportTab";
+import { useAuth } from "../../domain/AuthContext";
 
 export function OccurrencePage() {
-  // const { signOut, profile } = useAuth();
+  const { signOut, user } = useAuth();
   const [selectedTab, setSelectedTab] = useState(0);
 
   const handleSignOut = async () => {
     try {
-      // await signOut();
+      await signOut();
     } catch (error) {
       console.error("Error signing out:", error);
     }
@@ -29,8 +30,9 @@ export function OccurrencePage() {
               <h1 className="text-xl font-bold text-white">
                 Occurrence Manager
               </h1>
-              {/* {profile && <p className="text-sm text-slate-400">Welcome, {profile.name}</p>} */}
-              <p className="text-sm text-slate-400">Welcome, Kainã</p>
+              {user && (
+                <p className="text-sm text-slate-400">Welcome, {user.name}</p>
+              )}
             </div>
           </div>
           <button

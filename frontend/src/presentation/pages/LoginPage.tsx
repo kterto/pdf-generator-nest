@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { ArrowLeft, Loader2, Mail, Lock, AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../domain/AuthContext";
 
 interface LoginFormData {
   email: string;
@@ -12,6 +13,8 @@ export function LoginPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { useLogin } = useAuth();
+  const loginMutation = useLogin();
 
   const {
     register,
@@ -24,7 +27,8 @@ export function LoginPage() {
     setError(null);
 
     try {
-      // await signIn(data.email, data.password);
+      await loginMutation.mutateAsync(data);
+
       navigate("/occurrence");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to sign in");

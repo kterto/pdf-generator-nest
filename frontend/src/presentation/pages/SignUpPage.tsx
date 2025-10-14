@@ -12,6 +12,7 @@ import {
   EyeOff,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../domain/AuthContext";
 
 interface SignUpFormData {
   name: string;
@@ -21,7 +22,8 @@ interface SignUpFormData {
 }
 
 export function SignUpPage() {
-  // const { signUp } = useAuth();
+  const { useSignUp } = useAuth();
+  const signUpMutation = useSignUp();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,11 +40,12 @@ export function SignUpPage() {
     setError(null);
 
     try {
-      // await signUp(data.email, data.password, data.name, data.age);
+      await signUpMutation.mutateAsync(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to sign up");
     } finally {
       setLoading(false);
+      navigate("/occurrence", { replace: true });
     }
   };
 
