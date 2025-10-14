@@ -45,7 +45,6 @@ const usePDFReportWithQueue = () => {
     if (statusEventSource) {
       statusEventSource.onmessage = async (event) => {
         const { status } = JSON.parse(event.data);
-        console.log("Job status:", status);
 
         setTaskStatus(status);
 
@@ -59,7 +58,7 @@ const usePDFReportWithQueue = () => {
     };
   }, [statusEventSource]);
   const reportQuery = useQuery({
-    queryKey: [`report-${taskId}`],
+    queryKey: [`report-${taskId}`, taskStatus],
     enabled: !!taskStatus && taskStatus === "completed",
     queryFn: async () => {
       if (!taskId) throw new Error("Task ID not found");
@@ -67,20 +66,11 @@ const usePDFReportWithQueue = () => {
       const data = await ReportRepository.getReportFile(taskId);
 
       if (data) {
-        // const response = await ReportRepository.downloadReportFile(data.url);
-
-        // Create a blob URL to open the PDF
-        const fileURL = window.URL.createObjectURL(
-          new Blob([data], { type: "application/pdf" })
-        );
-
+        const fileURL = window.URL.createObjectURL(data);
         if (!openedFile) {
-          // Open in new tab
           window.open(fileURL, "_blank");
           setOpenedFile(true);
         }
-
-        return { ...data, fileURL };
       }
 
       return data;
@@ -91,6 +81,7 @@ const usePDFReportWithQueue = () => {
     startTask: taskMutation,
     isTaskStarting: taskMutation.isPending,
     reportQuery,
+    setTaskStatus,
   };
 };
 

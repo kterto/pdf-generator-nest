@@ -24,7 +24,8 @@ function reportJobStatusEventSource(jobId: number): EventSource {
 }
 
 async function getReportFile(jobId: number): Promise<Blob> {
-  return await axios.get(`/reports/file/${jobId}`, { responseType: "blob" });
+  return (await axios.get(`/reports/file/${jobId}`, { responseType: "blob" }))
+    .data;
 }
 
 export const ReportRepository = {

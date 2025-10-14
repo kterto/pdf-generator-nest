@@ -85,13 +85,11 @@ export class ReportsController {
       if (result?.filePath && existsSync(result.filePath)) {
         const fileStream = createReadStream(result.filePath);
 
-        // Set response headers for a PDF file
         res.set({
           "Content-Type": "application/pdf",
           "Content-Disposition": `inline; filename="report-${jobId}.pdf"`,
         });
 
-        // Return file as a StreamableFile
         return new StreamableFile(fileStream);
       } else {
         return { status: "completed", error: "File not found on disk" };

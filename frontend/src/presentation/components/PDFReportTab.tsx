@@ -39,7 +39,7 @@ export function PDFReportTab() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { startTask } = usePDFReportWithQueue();
+  const { startTask, setTaskStatus } = usePDFReportWithQueue();
 
   const {
     register,
@@ -67,9 +67,11 @@ export function PDFReportTab() {
         err instanceof Error ? err.message : "Failed to generate report"
       );
       startTask.reset();
+      setTaskStatus(null);
     } finally {
       setLoading(false);
       startTask.reset();
+      setTaskStatus(null);
     }
   };
 
