@@ -46,4 +46,8 @@ export class AuthService {
     });
     return this.login({ email: user.email, password: createUserDto.password });
   }
+
+  async userData(email: string): Promise<User> {
+    return await this.usersService.findByEmail(email);
+  }
 }
