@@ -46,7 +46,7 @@ export function OccurrencePage() {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-8">
-        <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-2xl border border-slate-700 overflow-hidden">
+        <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-2xl border border-slate-700 overflow-visible">
           <Tab.Group selectedIndex={selectedTab} onChange={setSelectedTab}>
             <Tab.List className="flex border-b border-slate-700">
               <Tab

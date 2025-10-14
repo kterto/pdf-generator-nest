@@ -1,6 +1,11 @@
 import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { Listbox } from "@headlessui/react";
+import { Controller, useForm } from "react-hook-form";
+import {
+  Listbox,
+  ListboxButton,
+  ListboxOption,
+  ListboxOptions,
+} from "@headlessui/react";
 import {
   Check,
   ChevronDown,
@@ -9,11 +14,12 @@ import {
   CheckCircle,
 } from "lucide-react";
 import type { OccurrenceStatus } from "../../domain/types";
-// import { supabase, OccurrenceStatus } from '../lib/supabase';
-// import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from "../../domain/AuthContext";
+import useCreateOccurrence from "../../domain/useCreateOccurrence";
 
 interface CreateOccurrenceFormData {
   description: string;
+  status: OccurrenceStatus;
 }
 
 const statusOptions: {
@@ -27,48 +33,42 @@ const statusOptions: {
 ];
 
 export function CreateOccurrenceTab() {
-  // const { user } = useAuth();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [selectedStatus, setSelectedStatus] =
-    useState<OccurrenceStatus>("open");
+
+  const createOccurrenceMutation = useCreateOccurrence();
 
   const {
     register,
     handleSubmit,
     formState: { errors },
     reset,
-  } = useForm<CreateOccurrenceFormData>();
+    control,
+  } = useForm<CreateOccurrenceFormData>({
+    defaultValues: { status: "open" },
+  });
 
   const onSubmit = async (data: CreateOccurrenceFormData) => {
-    // if (!user) return;
-    // setLoading(true);
-    // setError(null);
-    // setSuccess(false);
-    // try {
-    //   const { error: insertError } = await supabase
-    //     .from('occurrences')
-    //     .insert({
-    //       user_id: user.id,
-    //       description: data.description,
-    //       status: selectedStatus,
-    //     });
-    //   if (insertError) throw insertError;
-    //   setSuccess(true);
-    //   reset();
-    //   setSelectedStatus('open');
-    //   setTimeout(() => setSuccess(false), 3000);
-    // } catch (err) {
-    //   setError(err instanceof Error ? err.message : 'Failed to create occurrence');
-    // } finally {
-    //   setLoading(false);
-    // }
+    if (!user) return;
+    setLoading(true);
+    setError(null);
+    setSuccess(false);
+    try {
+      const Occurrence = await createOccurrenceMutation.mutateAsync(data);
+      if (!Occurrence) throw Error("Failed to create occurrence");
+      setSuccess(true);
+      reset();
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to create occurrence"
+      );
+    } finally {
+      setLoading(false);
+    }
   };
-
-  const selectedOption = statusOptions.find(
-    (opt) => opt.value === selectedStatus
-  )!;
 
   return (
     <div className="space-y-6">
@@ -113,63 +113,77 @@ export function CreateOccurrenceTab() {
           <label className="block text-sm font-medium text-slate-300 mb-2">
             Status
           </label>
-          <Listbox
-            value={selectedStatus}
-            onChange={setSelectedStatus}
-            disabled={loading}
-          >
-            <div className="relative">
-              <Listbox.Button className="relative w-full cursor-pointer bg-slate-900/50 border border-slate-600 rounded-lg py-3 pl-4 pr-10 text-left focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
-                <span className="flex items-center gap-3">
-                  <span
-                    className={`h-2 w-2 rounded-full ${selectedOption.color}`}
-                  />
-                  <span className="text-white">{selectedOption.label}</span>
-                </span>
-                <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-                  <ChevronDown className="h-5 w-5 text-slate-400" />
-                </span>
-              </Listbox.Button>
-
-              <Listbox.Options className="absolute z-10 mt-2 w-full bg-slate-800 border border-slate-600 rounded-lg shadow-xl max-h-60 overflow-auto focus:outline-none">
-                {statusOptions.map((option) => (
-                  <Listbox.Option
-                    key={option.value}
-                    value={option.value}
-                    className={({ active }) =>
-                      `relative cursor-pointer select-none py-3 pl-10 pr-4 transition-colors ${
-                        active ? "bg-slate-700 text-white" : "text-slate-300"
-                      }`
-                    }
-                  >
-                    {({ selected }) => (
-                      <>
-                        <span className="flex items-center gap-3">
-                          <span
-                            className={`h-2 w-2 rounded-full ${option.color}`}
-                          />
-                          <span
-                            className={
-                              selected ? "font-semibold" : "font-normal"
-                            }
-                          >
-                            {option.label}
-                          </span>
+          <Controller
+            name="status"
+            control={control}
+            render={({ field }) => {
+              const selectedOption =
+                statusOptions.find((opt) => opt.value === field.value) ??
+                statusOptions[0];
+              return (
+                <Listbox
+                  value={field.value}
+                  onChange={field.onChange}
+                  disabled={loading}
+                >
+                  <div className="relative">
+                    <ListboxButton className="relative w-full cursor-pointer bg-slate-900/50 border border-slate-600 rounded-lg py-3 pl-4 pr-10 text-left focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                      <span className="flex items-center gap-3">
+                        <span
+                          className={`h-2 w-2 rounded-full ${selectedOption.color}`}
+                        />
+                        <span className="text-white">
+                          {selectedOption.label}
                         </span>
-                        {selected && (
-                          <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-blue-500">
-                            <Check className="h-4 w-4" />
-                          </span>
-                        )}
-                      </>
-                    )}
-                  </Listbox.Option>
-                ))}
-              </Listbox.Options>
-            </div>
-          </Listbox>
-        </div>
+                      </span>
+                      <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                        <ChevronDown className="h-5 w-5 text-slate-400" />
+                      </span>
+                    </ListboxButton>
 
+                    <ListboxOptions className="absolute z-10 mt-2 w-full bg-slate-800 border border-slate-600 rounded-lg shadow-xl max-h-60 overflow-auto focus:outline-none">
+                      {statusOptions.map((option) => (
+                        <ListboxOption
+                          key={option.value}
+                          value={option.value}
+                          className={({ active }) =>
+                            `relative cursor-pointer select-none py-3 pl-10 pr-4 transition-colors ${
+                              active
+                                ? "bg-slate-700 text-white"
+                                : "text-slate-300"
+                            }`
+                          }
+                        >
+                          {({ selected }) => (
+                            <>
+                              <span className="flex items-center gap-3">
+                                <span
+                                  className={`h-2 w-2 rounded-full ${option.color}`}
+                                />
+                                <span
+                                  className={
+                                    selected ? "font-semibold" : "font-normal"
+                                  }
+                                >
+                                  {option.label}
+                                </span>
+                              </span>
+                              {selected && (
+                                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-blue-500">
+                                  <Check className="h-4 w-4" />
+                                </span>
+                              )}
+                            </>
+                          )}
+                        </ListboxOption>
+                      ))}
+                    </ListboxOptions>
+                  </div>
+                </Listbox>
+              );
+            }}
+          />
+        </div>
         <button
           type="submit"
           disabled={loading}

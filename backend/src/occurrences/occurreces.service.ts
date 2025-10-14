@@ -19,7 +19,11 @@ export class OccurrencesService {
     const occurrence = this.occurrenceRepository.create({
       ...createOccurrenceDto,
       created_by: { id: userId },
-      status: OccurrenceStatus.OPEN,
+      status: createOccurrenceDto.status ?? OccurrenceStatus.OPEN,
+      closed_at:
+        createOccurrenceDto.status === OccurrenceStatus.CLOSED
+          ? new Date()
+          : null,
     });
     return this.occurrenceRepository.save(occurrence);
   }

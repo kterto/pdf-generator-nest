@@ -14,10 +14,9 @@ export interface AuthSuccess {
 }
 
 export interface Occurrence {
-  id: string;
-  user_id: string;
+  id: number;
   description: string;
   status: OccurrenceStatus;
   created_at: string;
-  updated_at: string;
+  closed_at?: string;
 }

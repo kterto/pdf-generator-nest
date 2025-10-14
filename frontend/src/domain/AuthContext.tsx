@@ -71,8 +71,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     axiosRemoveToken();
     setUser(null);
-    localStorage.removeItemItem(TOKEN_KEY);
     navigate("/", { replace: true });
+    localStorage.removeItemItem(TOKEN_KEY);
   };
 
   const useSelf = () => {
