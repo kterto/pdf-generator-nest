@@ -1,15 +1,17 @@
 import { createBrowserRouter } from "react-router-dom";
-import OnBoardingPage from "../presentation/pages/OnBoardingPage";
-import LoginPage from "../presentation/pages/LoginPage";
-import SignUpPage from "../presentation/pages/SignUpPage";
+import { OnboardingPage } from "../presentation/pages/OnBoardingPage";
+import { LoginPage } from "../presentation/pages/LoginPage";
+import { SignUpPage } from "../presentation/pages/SignUpPage";
+import { OccurrencePage } from "../presentation/pages/OccurrencePage";
 
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <OnBoardingPage />,
+    element: <OnboardingPage />,
   },
   { path: "/login", element: <LoginPage /> },
-  { path: "/sign-up", element: <SignUpPage /> },
+  { path: "/signup", element: <SignUpPage /> },
+  { path: "/occurrence", element: <OccurrencePage /> },
 ]);
 
 export default router;
