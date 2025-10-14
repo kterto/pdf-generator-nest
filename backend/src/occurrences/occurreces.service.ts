@@ -79,13 +79,18 @@ export class OccurrencesService {
       onlyOwnOccurrences: boolean;
     }
   ) {
+    const startDate = new Date(filters.start);
+    const endDate = new Date(filters.end);
+
+    endDate.setHours(23, 59, 59, 999);
+
     const where = {
       created_by: { id: userId },
       status:
         filters.status !== "all"
           ? (filters.status as OccurrenceStatus)
           : undefined,
-      created_at: Between(new Date(filters.start), new Date(filters.end)),
+      created_at: Between(startDate, endDate),
     };
 
     if (!filters.onlyOwnOccurrences) delete where.created_by;
