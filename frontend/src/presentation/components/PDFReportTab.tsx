@@ -1,6 +1,11 @@
 import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { Listbox } from "@headlessui/react";
+import { Controller, useForm } from "react-hook-form";
+import {
+  Listbox,
+  ListboxButton,
+  ListboxOption,
+  ListboxOptions,
+} from "@headlessui/react";
 import {
   Check,
   ChevronDown,
@@ -8,12 +13,15 @@ import {
   AlertCircle,
   Download,
 } from "lucide-react";
-import type { Occurrence, OccurrenceStatus } from "../../domain/types";
+import type { OccurrenceStatus } from "../../domain/types";
+import { useAuth } from "../../domain/AuthContext";
+import usePDFReportWithQueue from "../../domain/usePDFReportWithQueue";
 
 interface PDFReportFormData {
   startDate: string;
   endDate: string;
   onlyOwnOccurrences: boolean;
+  status: OccurrenceStatus;
 }
 
 const statusOptions: {
@@ -28,16 +36,15 @@ const statusOptions: {
 ];
 
 export function PDFReportTab() {
-  // const { user } = useAuth();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedStatus, setSelectedStatus] = useState<
-    OccurrenceStatus | "all"
-  >("all");
+  const { startTask } = usePDFReportWithQueue();
 
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors },
   } = useForm<PDFReportFormData>({
     defaultValues: {
@@ -50,85 +57,21 @@ export function PDFReportTab() {
   });
 
   const onSubmit = async (data: PDFReportFormData) => {
-    // if (!user) return;
-    // setLoading(true);
-    // setError(null);
-    // try {
-    //   let query = supabase
-    //     .from('occurrences')
-    //     .select('*')
-    //     .gte('created_at', new Date(data.startDate).toISOString())
-    //     .lte('created_at', new Date(data.endDate + 'T23:59:59').toISOString());
-    //   if (selectedStatus !== 'all') {
-    //     query = query.eq('status', selectedStatus);
-    //   }
-    //   if (data.onlyOwnOccurrences) {
-    //     query = query.eq('user_id', user.id);
-    //   }
-    //   const { data: occurrences, error: fetchError } = await query.order('created_at', { ascending: false });
-    //   if (fetchError) throw fetchError;
-    //   generatePDFReport(occurrences || [], data);
-    // } catch (err) {
-    //   setError(err instanceof Error ? err.message : 'Failed to generate report');
-    // } finally {
-    //   setLoading(false);
-    // }
+    if (!user) return;
+    setLoading(true);
+    setError(null);
+    try {
+      await startTask.mutateAsync(data);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to generate report"
+      );
+      startTask.reset();
+    } finally {
+      setLoading(false);
+      startTask.reset();
+    }
   };
-
-  //   const generatePDFReport = (
-  //     occurrences: Occurrence[],
-  //     filters: PDFReportFormData
-  //   ) => {
-  //     const reportContent = `
-  // OCCURRENCE REPORT
-  // =====================================
-
-  // Report Generated: ${new Date().toLocaleString()}
-  // Date Range: ${new Date(filters.startDate).toLocaleDateString()} - ${new Date(
-  //       filters.endDate
-  //     ).toLocaleDateString()}
-  // Status Filter: ${
-  //       selectedStatus === "all"
-  //         ? "All Statuses"
-  //         : selectedStatus.charAt(0).toUpperCase() + selectedStatus.slice(1)
-  //     }
-  // Own Occurrences Only: ${filters.onlyOwnOccurrences ? "Yes" : "No"}
-  // Total Occurrences: ${occurrences.length}
-
-  // =====================================
-
-  // ${occurrences
-  //   .map(
-  //     (occ, index) => `
-  // ${index + 1}. Occurrence ID: ${occ.id}
-  //    Status: ${occ.status.toUpperCase()}
-  //    Created: ${new Date(occ.created_at).toLocaleString()}
-  //    Description: ${occ.description}
-  //    -----------------------------------
-  // `
-  //   )
-  //   .join("\n")}
-
-  // End of Report
-  // =====================================
-  //     `.trim();
-
-  //     const blob = new Blob([reportContent], { type: "text/plain" });
-  //     const url = URL.createObjectURL(blob);
-  //     const a = document.createElement("a");
-  //     a.href = url;
-  //     a.download = `occurrence-report-${
-  //       new Date().toISOString().split("T")[0]
-  //     }.txt`;
-  //     document.body.appendChild(a);
-  //     a.click();
-  //     document.body.removeChild(a);
-  //     URL.revokeObjectURL(url);
-  //   };
-
-  const selectedOption = statusOptions.find(
-    (opt) => opt.value === selectedStatus
-  )!;
 
   return (
     <div className="space-y-6">
@@ -180,61 +123,76 @@ export function PDFReportTab() {
           <label className="block text-sm font-medium text-slate-300 mb-2">
             Status Filter
           </label>
-          <Listbox
-            value={selectedStatus}
-            onChange={setSelectedStatus}
-            disabled={loading}
-          >
-            <div className="relative">
-              <Listbox.Button className="relative w-full cursor-pointer bg-slate-900/50 border border-slate-600 rounded-lg py-3 pl-4 pr-10 text-left focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
-                <span className="flex items-center gap-3">
-                  <span
-                    className={`h-2 w-2 rounded-full ${selectedOption.color}`}
-                  />
-                  <span className="text-white">{selectedOption.label}</span>
-                </span>
-                <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-                  <ChevronDown className="h-5 w-5 text-slate-400" />
-                </span>
-              </Listbox.Button>
-
-              <Listbox.Options className="absolute z-10 mt-2 w-full bg-slate-800 border border-slate-600 rounded-lg shadow-xl max-h-60 overflow-auto focus:outline-none">
-                {statusOptions.map((option) => (
-                  <Listbox.Option
-                    key={option.value}
-                    value={option.value}
-                    className={({ active }) =>
-                      `relative cursor-pointer select-none py-3 pl-10 pr-4 transition-colors ${
-                        active ? "bg-slate-700 text-white" : "text-slate-300"
-                      }`
-                    }
-                  >
-                    {({ selected }) => (
-                      <>
-                        <span className="flex items-center gap-3">
-                          <span
-                            className={`h-2 w-2 rounded-full ${option.color}`}
-                          />
-                          <span
-                            className={
-                              selected ? "font-semibold" : "font-normal"
-                            }
-                          >
-                            {option.label}
-                          </span>
+          <Controller
+            name="status"
+            control={control}
+            render={({ field }) => {
+              const selectedOption =
+                statusOptions.find((opt) => opt.value === field.value) ??
+                statusOptions[0];
+              return (
+                <Listbox
+                  value={field.value}
+                  onChange={field.onChange}
+                  disabled={loading}
+                >
+                  <div className="relative">
+                    <ListboxButton className="relative w-full cursor-pointer bg-slate-900/50 border border-slate-600 rounded-lg py-3 pl-4 pr-10 text-left focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                      <span className="flex items-center gap-3">
+                        <span
+                          className={`h-2 w-2 rounded-full ${selectedOption.color}`}
+                        />
+                        <span className="text-white">
+                          {selectedOption.label}
                         </span>
-                        {selected && (
-                          <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-blue-500">
-                            <Check className="h-4 w-4" />
-                          </span>
-                        )}
-                      </>
-                    )}
-                  </Listbox.Option>
-                ))}
-              </Listbox.Options>
-            </div>
-          </Listbox>
+                      </span>
+                      <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                        <ChevronDown className="h-5 w-5 text-slate-400" />
+                      </span>
+                    </ListboxButton>
+
+                    <ListboxOptions className="absolute z-10 mt-2 w-full bg-slate-800 border border-slate-600 rounded-lg shadow-xl max-h-60 overflow-auto focus:outline-none">
+                      {statusOptions.map((option) => (
+                        <ListboxOption
+                          key={option.value}
+                          value={option.value}
+                          className={({ active }) =>
+                            `relative cursor-pointer select-none py-3 pl-10 pr-4 transition-colors ${
+                              active
+                                ? "bg-slate-700 text-white"
+                                : "text-slate-300"
+                            }`
+                          }
+                        >
+                          {({ selected }) => (
+                            <>
+                              <span className="flex items-center gap-3">
+                                <span
+                                  className={`h-2 w-2 rounded-full ${option.color}`}
+                                />
+                                <span
+                                  className={
+                                    selected ? "font-semibold" : "font-normal"
+                                  }
+                                >
+                                  {option.label}
+                                </span>
+                              </span>
+                              {selected && (
+                                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-blue-500">
+                                  <Check className="h-4 w-4" />
+                                </span>
+                              )}
+                            </>
+                          )}
+                        </ListboxOption>
+                      ))}
+                    </ListboxOptions>
+                  </div>
+                </Listbox>
+              );
+            }}
+          />
         </div>
 
         <div className="flex items-center gap-3 p-4 bg-slate-900/50 border border-slate-600 rounded-lg">

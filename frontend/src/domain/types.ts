@@ -20,3 +20,8 @@ export interface Occurrence {
   created_at: string;
   closed_at?: string;
 }
+
+export interface ReportRequest {
+  message: string;
+  jobId: number;
+}

@@ -76,16 +76,21 @@ export class OccurrencesService {
       status: string;
       start: string;
       end: string;
+      onlyOwnOccurrences: boolean;
     }
   ) {
-    const query = await this.occurrenceRepository.findBy({
+    const where = {
       created_by: { id: userId },
       status:
         filters.status !== "all"
           ? (filters.status as OccurrenceStatus)
           : undefined,
       created_at: Between(new Date(filters.start), new Date(filters.end)),
-    });
+    };
+
+    if (!filters.onlyOwnOccurrences) delete where.created_by;
+
+    const query = await this.occurrenceRepository.findBy(where);
 
     return query;
   }

@@ -16,10 +16,10 @@ export class ReportsService {
       status: string;
       start: string;
       end: string;
+      onlyOwnOccurrences: boolean;
     }
   ) {
     const userId = (await this.usersService.findByEmail(user)).id;
-    console.log("[requestPdfReport][userId]: ", userId);
     const job = await this.pdfQueue.add("generate-report", {
       userId: userId,
       filters,
