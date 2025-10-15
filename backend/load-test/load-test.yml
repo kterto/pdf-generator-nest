@@ -2,13 +2,13 @@ config:
   target: "http://localhost:3000"
   processor: "./load-test-processor.js"
   phases:
-    - duration: 30
+    - duration: 10
       arrivalRate: 2
       name: "Warm-up"
-    - duration: 60
+    - duration: 20
       arrivalRate: 5
       name: "Steady load"
-    - duration: 30
+    - duration: 10
       arrivalRate: 10
       name: "Peak load"
   

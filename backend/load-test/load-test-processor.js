@@ -17,120 +17,69 @@ try {
 async function waitForJobCompletionSSE(context, events, done) {
   const jobId = context.vars.jobId;
   const token = context.vars.token;
-  const maxWaitTime = 120000; // 120 seconds timeout
+  const maxWaitTime = 300000; // 240s
   const startTime = Date.now();
 
-  if (!jobId) {
-    events.emit("counter", "sse.missing_job_id", 1);
-    return done(new Error("No jobId found in context"));
+  if (!jobId || !token) {
+    return done(new Error("Missing jobId or token"));
   }
 
-  if (!EventSource) {
-    events.emit("counter", "sse.library_not_loaded", 1);
-    return done(new Error("EventSource library not loaded"));
-  }
+  const sseUrl = `http://localhost:3000/reports/status/${jobId}`;
+  console.log(`[${jobId}] Connecting to ${sseUrl}`);
 
-  console.log(`[${jobId}] Starting SSE connection...`);
-
-  let eventSource;
   try {
-    const sseUrl = `http://localhost:3000/reports/status/${jobId}`;
-    eventSource = new EventSource(sseUrl, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-  } catch (error) {
-    console.error(`[${jobId}] Failed to create EventSource:`, error.message);
-    events.emit("counter", "sse.creation_failed", 1);
-    return done(error);
-  }
+    return new Promise((resolve, reject) => {
+      const es = new EventSource(sseUrl, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-  let completed = false;
-  let timeout;
-
-  // Set timeout
-  timeout = setTimeout(() => {
-    if (!completed) {
-      console.log(`[${jobId}] SSE timeout after ${maxWaitTime}ms`);
-      eventSource.close();
-      events.emit("counter", "sse.timeout", 1);
-      done(new Error("SSE timeout"));
-    }
-  }, maxWaitTime);
-
-  // Handle SSE messages
-  eventSource.onmessage = (event) => {
-    // Skip keep-alive messages
-    if (event.data === ": keep-alive") {
-      return;
-    }
-
-    try {
-      const data = JSON.parse(event.data);
-      const elapsed = Date.now() - startTime;
-
-      console.log(`[${jobId}] SSE event received:`, data.status);
-
-      if (data.status === "completed") {
-        completed = true;
-        clearTimeout(timeout);
-        eventSource.close();
-
-        console.log(`[${jobId}] Job completed in ${elapsed}ms`);
-        events.emit("counter", "reports.completed", 1);
-        events.emit("histogram", "reports.completion_time_ms", elapsed);
-
-        // Store the file path for potential use
-        if (data.key) {
-          context.vars.filePath = data.key;
+      timeout = setTimeout(() => {
+        if (!completed) {
+          console.log(`[${jobId}] SSE timeout after ${maxWaitTime}ms`);
+          es.close();
+          events.emit("counter", "sse.timeout", 1);
+          reject(new Error("Timeout waiting for SSE event"));
         }
+      }, maxWaitTime);
 
-        done();
-      } else if (data.status === "failed") {
-        completed = true;
+      es.onmessage = (event) => {
+        if (!event.data || event.data.startsWith(":")) return;
+        try {
+          const data = JSON.parse(event.data);
+          const elapsed = Date.now() - startTime;
+          if (data.status === "completed") {
+            clearTimeout(timeout);
+            es.close();
+            console.log(
+              `[${jobId}] ✅ Job completed in ${Date.now() - startTime}ms`
+            );
+            events.emit("counter", "reports.completed", 1);
+            events.emit("histogram", "reports.completion_time_ms", elapsed);
+
+            context.vars.fileReady = true;
+            resolve();
+          } else if (data.status === "failed" || data.status === "not_found") {
+            clearTimeout(timeout);
+            events.emit("counter", "reports.not_found", 1);
+            es.close();
+            reject(new Error(`Job failed or not found: ${data.status}`));
+          }
+        } catch (err) {
+          console.error(`[${jobId}] SSE parse error:`, err);
+          events.emit("counter", "sse.parse_error", 1);
+        }
+      };
+
+      es.onerror = (err) => {
         clearTimeout(timeout);
-        eventSource.close();
-
-        console.error(`[${jobId}] Job failed:`, data.error);
-        events.emit("counter", "reports.failed", 1);
-        done(new Error(`Job failed: ${data.error}`));
-      } else if (data.status === "not_found") {
-        completed = true;
-        clearTimeout(timeout);
-        eventSource.close();
-
-        console.error(`[${jobId}] Job not found`);
-        events.emit("counter", "reports.not_found", 1);
-        done(new Error("Job not found"));
-      } else {
-        // Job still processing (active, waiting, delayed, etc.)
-        events.emit("counter", `reports.status.${data.status}`, 1);
-      }
-    } catch (error) {
-      console.error(`[${jobId}] Error parsing SSE data:`, error.message);
-      events.emit("counter", "sse.parse_error", 1);
-    }
-  };
-
-  // Handle SSE errors
-  eventSource.onerror = (error) => {
-    if (!completed) {
-      completed = true;
-      clearTimeout(timeout);
-      eventSource.close();
-
-      console.error(`[${jobId}] SSE error:`, error.message || error);
-      events.emit("counter", "sse.connection_error", 1);
-      done(new Error(`SSE connection error: ${error.message || "Unknown"}`));
-    }
-  };
-
-  // Handle connection open
-  eventSource.onopen = () => {
-    console.log(`[${jobId}] SSE connection opened`);
-    events.emit("counter", "sse.connected", 1);
-  };
+        es.close();
+        reject(new Error(`SSE error: ${err.message || err}`));
+      };
+    });
+  } catch (err) {
+    console.error(`[${jobId}] ❌ ${err.message}`);
+    done(err);
+  }
 }
 
 /**
@@ -155,7 +104,8 @@ function logResponse(req, res, context, events, done) {
  */
 function logDownload(req, res, context, events, done) {
   const jobId = context.vars.jobId;
-  const contentLength = res.headers["content-length"];
+  const contentLength =
+    res.headers["content-length"] || Buffer.byteLength(res.body || "");
 
   if (res.statusCode === 200) {
     console.log(
