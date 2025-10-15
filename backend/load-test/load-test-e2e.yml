@@ -1,0 +1,39 @@
+config:
+  target: "http://localhost:3000"
+  phases:
+    - duration: 60          # Run test for 1 minute
+      arrivalRate: 5        # 5 users per second
+      name: "E2E report workflow"
+
+  defaults:
+    headers:
+      Content-Type: "application/json"
+
+  processor: "./sse-processor.js"
+
+scenarios:
+  - name: "Create report, wait for completion (SSE), then download PDF"
+    flow:
+      # 1️⃣ Create report
+      - post:
+          url: "/reports/create_report/"
+          json:
+            start: "2025-10-01"
+            end: "2025-10-14"
+            status: "all"
+            onlyOwnOccurrences: false
+          capture:
+            - json: "$.jobId"
+              as: "jobId"
+
+      # 2️⃣ Wait a short time to simulate frontend connecting to SSE
+      - think: 2
+
+      # 3️⃣ Connect to SSE stream and wait for completion
+      - function: "waitForJobCompletion"
+
+      # 4️⃣ Once job completes, download the PDF
+      - get:
+          url: "/reports/file/{{ jobId }}"
+          expect:
+            - statusCode: 200

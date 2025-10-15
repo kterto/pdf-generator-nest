@@ -5,7 +5,11 @@
     "build": "nest build",
     "start": "nest start",
     "start:dev": "nest start --watch",
-    "start:prod": "node dist/main"
+    "start:prod": "node dist/main",
+    "load-test": "npx artillery run ./load-test/load-test-e2e-with-warm-up.yml --record --key a9_12kc5ag24mxtw0tees7u6jcq4ie0h1sl",
+    "load-test:report": "npx artillery run load-test.yml --output report.json && npx artillery report report.json",
+    "load-test:debug": "npx DEBUG=* artillery run load-test.yml",
+    "load-test:quick": "npx artillery quick --count 10 --num 5 http://localhost:3000"
   },
   "dependencies": {
     "@nestjs/bull": "^10.0.0",
@@ -21,6 +25,7 @@
     "bull": "^4.11.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.0",
+    "eventsource": "^4.0.0",
     "jsonwebtoken": "^9.0.2",
     "passport": "^0.6.0",
     "passport-jwt": "^4.0.1",
@@ -42,6 +47,7 @@
     "@types/passport-local": "^1.0.35",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
+    "artillery": "^2.0.21",
     "typescript": "^5.0.0"
   }
 }

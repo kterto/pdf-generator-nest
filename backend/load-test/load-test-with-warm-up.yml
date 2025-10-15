@@ -1,0 +1,75 @@
+config:
+  target: "http://localhost:3000"
+  processor: "./load-test-functions.js"
+  phases:
+    - duration: 60
+      arrivalRate: 5    # Start lower to see baseline
+      name: "Warm-up"
+    - duration: 120
+      arrivalRate: 10
+      name: "Steady load"
+    - duration: 60
+      arrivalRate: 20
+      name: "Peak load"
+  
+  defaults:
+    headers:
+      Content-Type: "application/json"
+
+scenarios:
+  - name: "Create report with polling"
+    flow:
+      # Authenticate first (if needed)
+      - post:
+          url: "/auth/login"
+          json:
+            email: "kterto@capyba.com"
+            password: "test@123"
+          capture:
+            - json: "$.access_token"
+              as: "token"
+          expect:
+            - statusCode: 201
+
+      # Create report job
+      - post:
+          url: "/reports/create_report/"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          json:
+            start: "2025-10-01"
+            end: "2025-10-14"
+            status: "all"
+            onlyOwnOccurrences: false
+          capture:
+            - json: "$.jobId"
+              as: "jobId"
+          expect:
+            - statusCode: [200, 201]
+
+      # Poll for job completion (with retry logic)
+      - function: "pollForJobCompletion"
+
+  - name: "Create report only (no download)"
+    weight: 3  # 75% of traffic just creates reports
+    flow:
+      - post:
+          url: "/auth/login"
+          json:
+            email: "kterto@capyba.com"
+            password: "test@123"
+          capture:
+            - json: "$.access_token"
+              as: "token"
+      
+      - post:
+          url: "/reports/create_report/"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          json:
+            start: "2025-10-01"
+            end: "2025-10-14"
+            status: "all"
+            onlyOwnOccurrences: false
+          expect:
+            - statusCode: [200, 201]

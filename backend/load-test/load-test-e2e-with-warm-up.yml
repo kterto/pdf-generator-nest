@@ -1,0 +1,132 @@
+config:
+  target: "http://localhost:3000"
+  processor: "./load-test-processor.js"
+  phases:
+    - duration: 30
+      arrivalRate: 2
+      name: "Warm-up"
+    - duration: 60
+      arrivalRate: 5
+      name: "Steady load"
+    - duration: 30
+      arrivalRate: 10
+      name: "Peak load"
+  
+  defaults:
+    headers:
+      Content-Type: "application/json"
+
+  # Track custom metrics
+  ensure:
+    maxErrorRate: 5  # Allow up to 5% errors
+    
+scenarios:
+  - name: "Complete PDF Report Flow with SSE"
+    weight: 10
+    flow:
+      # Step 1: Authenticate
+      - post:
+          url: "/auth/signin/"
+          json:
+            email: "kterto@capyba.com"
+            password: "test@123"
+          capture:
+            - json: "$.access_token"
+              as: "token"
+          expect:
+            - statusCode: [200, 201]
+          afterResponse: "logResponse"
+
+      # Step 2: Create report job
+      - post:
+          url: "/reports/create_report"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          json:
+            start: "2025-10-01"
+            end: "2025-10-14"
+            status: "all"
+            onlyOwnOccurrences: false
+          capture:
+            - json: "$.jobId"
+              as: "jobId"
+          expect:
+            - statusCode: [200, 201]
+            - contentType: json
+          afterResponse: "logResponse"
+
+      # Step 3: Connect to SSE and wait for completion
+      - function: "waitForJobCompletionSSE"
+
+      # Step 4: Download the completed PDF
+      - get:
+          url: "/reports/file/{{ jobId }}"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          expect:
+            - statusCode: 200
+            - contentType: application/pdf
+          afterResponse: "logDownload"
+
+  - name: "Create Report Only (No Wait)"
+    weight: 3
+    flow:
+      - post:
+          url: "/auth/signin/"
+          json:
+            email: "kterto@capyba.com"
+            password: "test@123"
+          capture:
+            - json: "$.access_token"
+              as: "token"
+          expect:
+            - statusCode: [200, 201]
+
+      - post:
+          url: "/reports/create_report"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          json:
+            start: "2025-10-01"
+            end: "2025-10-14"
+            status: "all"
+            onlyOwnOccurrences: false
+          expect:
+            - statusCode: [200, 201]
+
+  - name: "Check Existing Job Status"
+    weight: 2
+    flow:
+      - post:
+          url: "/auth/signin/"
+          json:
+            email: "kterto@capyba.com"
+            password: "test@123"
+          capture:
+            - json: "$.access_token"
+              as: "token"
+
+      # Create a job first
+      - post:
+          url: "/reports/create_report"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          json:
+            start: "2025-10-01"
+            end: "2025-10-14"
+            status: "all"
+            onlyOwnOccurrences: false
+          capture:
+            - json: "$.jobId"
+              as: "jobId"
+
+      # Wait a random time
+      - think: 2
+
+      # Check status
+      - get:
+          url: "/reports/file/{{ jobId }}"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          expect:
+            - statusCode: [200, 404]  # Either completed or still processing
