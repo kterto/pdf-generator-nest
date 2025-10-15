@@ -17,7 +17,7 @@ try {
 async function waitForJobCompletionSSE(context, events, done) {
   const jobId = context.vars.jobId;
   const token = context.vars.token;
-  const maxWaitTime = 300000; // 240s
+  const maxWaitTime = 300000; // 300s
   const startTime = Date.now();
 
   if (!jobId || !token) {

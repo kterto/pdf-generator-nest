@@ -44,8 +44,6 @@ export class ReportsProcessor {
         },
       };
 
-      console.log(`generating report for data`, reportData);
-
       // Generate PDF
       const pdfPath = await this.pdfGeneratorService.generateReportPdf(
         reportData
