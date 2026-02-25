@@ -44,8 +44,6 @@ export class ReportsProcessor {
         },
       };
 
-      console.log(`generating report for data`, reportData);
-
       // Generate PDF
       const pdfPath = await this.pdfGeneratorService.generateReportPdf(
         reportData
@@ -54,7 +52,7 @@ export class ReportsProcessor {
       // In a real app, you'd save this to a file storage service
       // For now, we'll just return success
       console.log("Report generated successfully for job:", job.id);
-      return { success: true, filePaeth: pdfPath };
+      return { success: true, filePath: pdfPath };
     } catch (error) {
       console.error("Error generating report:", error);
       throw error;

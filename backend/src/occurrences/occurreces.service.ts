@@ -19,7 +19,11 @@ export class OccurrencesService {
     const occurrence = this.occurrenceRepository.create({
       ...createOccurrenceDto,
       created_by: { id: userId },
-      status: OccurrenceStatus.OPEN,
+      status: createOccurrenceDto.status ?? OccurrenceStatus.OPEN,
+      closed_at:
+        createOccurrenceDto.status === OccurrenceStatus.CLOSED
+          ? new Date()
+          : null,
     });
     return this.occurrenceRepository.save(occurrence);
   }
@@ -72,16 +76,26 @@ export class OccurrencesService {
       status: string;
       start: string;
       end: string;
+      onlyOwnOccurrences: boolean;
     }
   ) {
-    const query = await this.occurrenceRepository.findBy({
+    const startDate = new Date(filters.start);
+    const endDate = new Date(filters.end);
+
+    endDate.setHours(23, 59, 59, 999);
+
+    const where = {
       created_by: { id: userId },
       status:
         filters.status !== "all"
           ? (filters.status as OccurrenceStatus)
           : undefined,
-      created_at: Between(new Date(filters.start), new Date(filters.end)),
-    });
+      created_at: Between(startDate, endDate),
+    };
+
+    if (!filters.onlyOwnOccurrences) delete where.created_by;
+
+    const query = await this.occurrenceRepository.findBy(where);
 
     return query;
   }

@@ -39,7 +39,7 @@ export class OccurrencesController {
   @Post()
   @UseGuards(JwtAuthGuard)
   create(@Body() createOccurrenceDto: CreateOccurrenceDto, @Request() req) {
-    return this.occurrencesService.create(createOccurrenceDto, req.user.id);
+    return this.occurrencesService.create(createOccurrenceDto, req.user.email);
   }
 
   @ApiOperation({ summary: "Get all occurrences for user" })
